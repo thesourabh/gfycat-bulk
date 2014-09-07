@@ -5,15 +5,14 @@ import random
 from time import sleep
 
 def download_file(url,orig):
-	orig = orig[4:-4] + '.mp4'
-	orig = 'MP4/' + orig
+	orig = 'MP4/' + orig[4:-4] + '.mp4'
 	print "Downloading -> ",
 	try:
 		return urllib.urlretrieve(url, orig)
 	except:
 		return None
 
-def create_payload(filename, key):
+def create_request(filename, key):
 	payload = [('key',key)]
 	payload.append(('acl','private'))
 	payload.append(('AWSAccessKeyId','AKIAIT4VU4B7G2LQYKZQ'))
@@ -23,11 +22,13 @@ def create_payload(filename, key):
 	payload.append(('policy','eyAiZXhwaXJhdGlvbiI6ICIyMDIwLTEyLTAxVDEyOjAwOjAwLjAwMFoiLAogICAgICAgICAgICAiY29uZGl0aW9ucyI6IFsKICAgICAgICAgICAgeyJidWNrZXQiOiAiZ2lmYWZmZSJ9LAogICAgICAgICAgICBbInN0YXJ0cy13aXRoIiwgIiRrZXkiLCAiIl0sCiAgICAgICAgICAgIHsiYWNsIjogInByaXZhdGUifSwKCSAgICB7InN1Y2Nlc3NfYWN0aW9uX3N0YXR1cyI6ICIyMDAifSwKICAgICAgICAgICAgWyJzdGFydHMtd2l0aCIsICIkQ29udGVudC1UeXBlIiwgIiJdLAogICAgICAgICAgICBbImNvbnRlbnQtbGVuZ3RoLXJhbmdlIiwgMCwgNTI0Mjg4MDAwXQogICAgICAgICAgICBdCiAgICAgICAgICB9'))
 	fp = open(filename,'rb')
 	payload.append(('file',fp))
-	return (payload,fp)
+	r = requests.post(post_url, files=payload)
+	fp.close()
+	return r
 
 files = glob.glob("GIF/*.gif")
 files = [('GIF/' + i[4:]) for i in files]
-print str(files)
+#print str(files)
 
 post_url = 'https://gifaffe.s3.amazonaws.com/'
 get_url = 'http://upload.gfycat.com/transcode/'
@@ -38,9 +39,7 @@ for filename in files:
 	file_num = "File#" + str(count) + ": " + filename[4:]
 	print file_num + " Uploading ->",
 	key = filename[:3] + str(count) + str(random.randint(1, 1000))
-	files, fp = create_payload(filename, key)
-	r = requests.post(post_url, files=files)
-	fp.close()
+	r = create_request(filename, key)
 	if (int(r.status_code) != 200):
 		print "\nError uploading file. Status Code: " + str(r.status_code)
 		break
