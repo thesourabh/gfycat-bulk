@@ -20,37 +20,35 @@ def create_request(filename, key):
 	payload.append(('signature','mk9t/U/wRN4/uU01mXfeTe2Kcoc='))
 	payload.append(('Content-Type','image/gif'))
 	payload.append(('policy','eyAiZXhwaXJhdGlvbiI6ICIyMDIwLTEyLTAxVDEyOjAwOjAwLjAwMFoiLAogICAgICAgICAgICAiY29uZGl0aW9ucyI6IFsKICAgICAgICAgICAgeyJidWNrZXQiOiAiZ2lmYWZmZSJ9LAogICAgICAgICAgICBbInN0YXJ0cy13aXRoIiwgIiRrZXkiLCAiIl0sCiAgICAgICAgICAgIHsiYWNsIjogInByaXZhdGUifSwKCSAgICB7InN1Y2Nlc3NfYWN0aW9uX3N0YXR1cyI6ICIyMDAifSwKICAgICAgICAgICAgWyJzdGFydHMtd2l0aCIsICIkQ29udGVudC1UeXBlIiwgIiJdLAogICAgICAgICAgICBbImNvbnRlbnQtbGVuZ3RoLXJhbmdlIiwgMCwgNTI0Mjg4MDAwXQogICAgICAgICAgICBdCiAgICAgICAgICB9'))
-	fp = open(filename,'rb')
-	payload.append(('file',fp))
-	r = requests.post(post_url, files=payload)
-	fp.close()
+	with open(filename,'rb') as fp:
+		payload.append(('file',fp))
+		r = requests.post(post_url, files=payload)
 	return r
 
-files = glob.glob("GIF/*.gif")
-files = [('GIF/' + i[4:]) for i in files]
-#print str(files)
+def get_file_list(match_path):
+	file_list = [('GIF/' + i[4:]) for i in glob.glob(match_path)]
+	#print str(files)
+	return file_list
 
 post_url = 'https://gifaffe.s3.amazonaws.com/'
 get_url = 'http://upload.gfycat.com/transcode/'
-
-count = 0
-for filename in files:
-	count += 1
-	file_num = "File#" + str(count) + ": " + filename[4:]
+files = get_file_list("GIF/*.gif")
+for i, filename in enumerate(files):
+	file_num = "File#" + str(i) + ": " + filename[4:]
 	print file_num + " Uploading ->",
-	key = filename[:3] + str(count) + str(random.randint(1, 1000))
-	r = create_request(filename, key)
-	if (int(r.status_code) != 200):
-		print "\nError uploading file. Status Code: " + str(r.status_code)
+	key = filename[:3] + str(i) + str(random.randint(1, 1000))
+	request = create_request(filename, key)
+	if (int(request.status_code) != 200):
+		print "\nError uploading file. Status Code: " + str(request.status_code)
 		break
 	print " Uploaded -> ",
-	url = get_url + key
-	r = requests.get(url)
-	if (int(r.status_code) != 200):
+	upload_url = get_url + key
+	request = requests.get(upload_url)
+	if (int(request.status_code) != 200):
 		print "\nError getting upload details."
 		break
-	dat = r.json()
-	mp4Url = dat[u'mp4Url']
+	upload_json = request.json()
+	mp4Url = upload_json[u'mp4Url']
 	if (download_file(mp4Url, filename) == None):
 		print "\nError downloading file."
 		break
